@@ -236,7 +236,6 @@ function setupIpcHandlers() {
     nombreEmpresa: 'Conobras',
     eslogan: 'Construcción + Arquitectura',
     arquitecto: 'Arq. Thomas Castro',
-    cedulaProfesional: 'CED-ARQ-893421',
     telefono: '+52 55 4123 9876',
     email: 'contacto@conobras.com',
     direccion: 'Av. Arquitectura 1050, Suite 4B',

@@ -5,16 +5,18 @@ export const DEFAULT_CONFIG: ConfiguracionEmpresa = {
   eslogan: 'Construcción + Arquitectura',
   arquitecto: 'Arquitecto - Constructor John Fabio Giraldo',
   especialidad: 'Especialista en Gerencia de la Construcción',
-  cedulaProfesional: 'CED-ARQ-893421',
   telefono: '3128710555',
   email: 'gerencia@conobrasfg.com',
   direccion: '@conobras',
   sitioWeb: 'instagram.com/conobras',
   monedaSimbolo: '$',
+  modoCalculoDefault: 'DESGLOSADO',
+  porcentajeAdministracionDefault: 8,
   porcentajeImprevistosDefault: 5,
   porcentajeGastosGeneralesDefault: 8,
   porcentajeHonorariosDefault: 15,
-  porcentajeIvaDefault: 16
+  porcentajeAiuGlobalDefault: 28,
+  porcentajeIvaDefault: 19
 };
 
 export const SEED_INSUMOS: Insumo[] = [
@@ -218,11 +220,14 @@ export const SAMPLE_COTIZACION: Cotizacion = {
   fecha: new Date().toISOString().split('T')[0],
   validezDias: 15,
   moneda: '$',
+  modoCalculo: 'DESGLOSADO',
+  porcentajeAdministracion: 8,
   porcentajeImprevistos: 5,
   porcentajeGastosGenerales: 8,
   porcentajeHonorarios: 15,
+  porcentajeAiuGlobal: 28,
   aplicaIva: false,
-  porcentajeIva: 16,
+  porcentajeIva: 19,
   notas: '1. Los precios se mantendrán fijos para la ejecución del proyecto acordado.\n2. Incluye mano de obra calificada, equipo de protección, limpieza diaria y retiro de escombros.\n3. Esquema de pago: 40% Anticipo a la firma de contrato, 50% en 4 estimaciones quincenales según avance físico, 10% Finiquito contra entrega de obra.',
   estado: 'PRESENTADA',
   creadoEn: '2026-09-25T10:00:00.000Z',

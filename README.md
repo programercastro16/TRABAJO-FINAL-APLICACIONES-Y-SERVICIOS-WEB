@@ -73,7 +73,7 @@ El instalador quedará generado en la carpeta `dist-electron/` o `dist/`.
    - Botón de **Compartir por WhatsApp**: Formatea un mensaje ejecutivo con los datos clave y abre WhatsApp Web o App en un solo clic.
 
 5. **Configuración de Estudio & Marca**:
-   - Datos del arquitecto titular (nombre, cédula profesional, teléfono, correo).
+   - Datos del arquitecto titular (nombre, especialidad, teléfono, correo).
    - Porcentajes predeterminados para nuevas cotizaciones.
 
 ---

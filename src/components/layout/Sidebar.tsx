@@ -40,8 +40,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'materiales' as ActiveTab,
-      label: 'Catálogo de Insumos',
-      description: 'Materiales & M.O.',
+      label: "APU'S",
+      description: 'Insumos, Materiales & M.O.',
       icon: Layers,
       badge: materialsCount > 0 ? materialsCount : null,
       color: '#38BDF8'

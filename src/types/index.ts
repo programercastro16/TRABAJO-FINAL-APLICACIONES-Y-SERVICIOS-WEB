@@ -28,16 +28,41 @@ export interface Partida {
   items: ItemPartida[];
 }
 
+export type ModoCalculoPresupuesto = 'DESGLOSADO' | 'SIMPLIFICADO';
+
 export interface CalculosPresupuesto {
   partidasCalculadas: Array<Partida & { subtotal: number }>;
   costoDirectoTotal: number;
+  
+  // Modo 1: Desglosado (AIU Detallado)
+  porcentajeAdministracion: number;
+  montoAdministracion: number;
+  porcentajeImprevistos: number;
   montoImprevistos: number;
+  porcentajeUtilidad: number;
+  montoUtilidad: number;
+  subtotalAiuDesglosado: number;
+  
+  // Modo 2: Simplificado (AIU Global)
+  porcentajeAiuGlobal: number;
+  montoAiuGlobal: number;
+  subtotalConAiuSimplificado: number;
+  
+  // IVA y Base
+  aplicaIva: boolean;
+  porcentajeIva: number;
+  baseIva: number;
+  montoIva: number;
+  
+  // Total consolidado y modo activo
+  totalFinal: number;
+  modoCalculo: ModoCalculoPresupuesto;
+
+  // Campos de compatibilidad histórica
   montoGastosGenerales: number;
   subtotalOperativo: number;
   montoHonorarios: number;
   subtotalAntesIva: number;
-  montoIva: number;
-  totalFinal: number;
 }
 
 export type EstadoCotizacion = 'BORRADOR' | 'PRESENTADA' | 'APROBADA' | 'RECHAZADA';
@@ -54,10 +79,19 @@ export interface Cotizacion {
   validezDias: number;
   moneda: string;
   
-  // Parámetros porcentuales
-  porcentajeImprevistos: number;
-  porcentajeGastosGenerales: number;
-  porcentajeHonorarios: number; // Honorarios de diseño & dirección técnica
+  // Modalidad de cálculo
+  modoCalculo?: ModoCalculoPresupuesto;
+
+  // Parámetros porcentuales Modo Desglosado
+  porcentajeAdministracion?: number; // Administración (A)
+  porcentajeImprevistos: number; // Imprevistos (I)
+  porcentajeGastosGenerales: number; // Compatibilidad con Administración (A)
+  porcentajeHonorarios: number; // Utilidad (U) / Honorarios
+
+  // Parámetros porcentuales Modo Simplificado
+  porcentajeAiuGlobal?: number; // AIU Global (%)
+  
+  // Impuestos
   aplicaIva: boolean;
   porcentajeIva: number;
   
@@ -89,8 +123,11 @@ export interface ConfiguracionEmpresa {
   direccion: string;
   sitioWeb?: string;
   monedaSimbolo: string;
+  modoCalculoDefault?: ModoCalculoPresupuesto;
+  porcentajeAdministracionDefault?: number;
   porcentajeImprevistosDefault: number;
   porcentajeGastosGeneralesDefault: number;
   porcentajeHonorariosDefault: number;
+  porcentajeAiuGlobalDefault?: number;
   porcentajeIvaDefault: number;
 }

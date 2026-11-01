@@ -64,11 +64,14 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
     fecha: quote?.fecha || new Date().toISOString().split('T')[0],
     validezDias: Number(quote?.validezDias) || 15,
     moneda: quote?.moneda || '$',
-    porcentajeImprevistos: Number(quote?.porcentajeImprevistos) || 0,
-    porcentajeGastosGenerales: Number(quote?.porcentajeGastosGenerales) || 0,
-    porcentajeHonorarios: Number(quote?.porcentajeHonorarios) || 0,
+    modoCalculo: quote?.modoCalculo || 'DESGLOSADO',
+    porcentajeAdministracion: Number(quote?.porcentajeAdministracion ?? quote?.porcentajeGastosGenerales) || 8,
+    porcentajeImprevistos: Number(quote?.porcentajeImprevistos) || 5,
+    porcentajeGastosGenerales: Number(quote?.porcentajeGastosGenerales) || 8,
+    porcentajeHonorarios: Number(quote?.porcentajeHonorarios) || 15,
+    porcentajeAiuGlobal: Number(quote?.porcentajeAiuGlobal) || 28,
     aplicaIva: Boolean(quote?.aplicaIva),
-    porcentajeIva: Number(quote?.porcentajeIva) || 16,
+    porcentajeIva: Number(quote?.porcentajeIva) || 19,
     partidas: Array.isArray(quote?.partidas) ? quote.partidas : [],
     notas: quote?.notas || ''
   };
@@ -80,14 +83,29 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
     return { ...p, items, subtotal };
   });
 
+  const isSimplificado = safeQuote.modoCalculo === 'SIMPLIFICADO';
   const costoDirectoTotal = partidasCalculadas.reduce((sum, p) => sum + p.subtotal, 0);
+
+  // Valores Modo 1: Desglosado (calculados s/ Costo Directo)
+  const montoAdministracion = costoDirectoTotal * ((safeQuote.porcentajeAdministracion || safeQuote.porcentajeGastosGenerales) / 100);
   const montoImprevistos = costoDirectoTotal * (safeQuote.porcentajeImprevistos / 100);
-  const montoGastosGenerales = costoDirectoTotal * (safeQuote.porcentajeGastosGenerales / 100);
-  const subtotalOperativo = costoDirectoTotal + montoImprevistos + montoGastosGenerales;
-  const montoHonorarios = subtotalOperativo * (safeQuote.porcentajeHonorarios / 100);
-  const subtotalAntesIva = subtotalOperativo + montoHonorarios;
-  const montoIva = safeQuote.aplicaIva ? subtotalAntesIva * (safeQuote.porcentajeIva / 100) : 0;
-  const totalFinal = subtotalAntesIva + montoIva;
+  const montoHonorarios = costoDirectoTotal * (safeQuote.porcentajeHonorarios / 100); // Utilidad (U)
+
+  // Valores Modo 2: Simplificado
+  const montoAiuGlobal = costoDirectoTotal * ((safeQuote.porcentajeAiuGlobal || 28) / 100);
+  const subtotalConAiu = costoDirectoTotal + montoAiuGlobal;
+
+  let montoIva = 0;
+  let totalFinal = 0;
+
+  if (isSimplificado) {
+    montoIva = safeQuote.aplicaIva ? montoAiuGlobal * (safeQuote.porcentajeIva / 100) : 0;
+    totalFinal = subtotalConAiu + montoIva;
+  } else {
+    // IVA ÚNICAMENTE sobre la Utilidad (U)
+    montoIva = safeQuote.aplicaIva ? montoHonorarios * (safeQuote.porcentajeIva / 100) : 0;
+    totalFinal = costoDirectoTotal + montoAdministracion + montoImprevistos + montoHonorarios + montoIva;
+  }
 
   const formatMoneda = (valor: number) => {
     return `${safeQuote.moneda} ${(valor || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -251,7 +269,7 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
       `*Ubicación:* ${safeQuote.ubicacion}\n\n` +
       `*Inversión Total Estimada:* ${formatMoneda(totalFinal)}\n` +
       `*Fecha de Emisión:* ${safeQuote.fecha}\n\n` +
-      `_Emitido por: ${safeConfig.arquitecto} (${safeConfig.especialidad || 'Especialista en gerencia de la construcción'}) | conobras Construcción + Arquitectura_\n` +
+      `_Emitido por: ${safeConfig.arquitecto} (${safeConfig.especialidad || 'Especialista en gerencia de la construcción'}) | Construcción + Arquitectura_\n` +
       `Quedamos a su disposición para coordinar la revisión del proyecto.`;
 
     const encoded = encodeURIComponent(message);
@@ -399,7 +417,7 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
 
                         <div style={{ textAlign: 'right' }}>
                           <span style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.12em', color: '#AA8820', display: 'block' }}>
-                            PROPUESTA TÉCNICA Y ECONÓMICA • A TODO COSTO
+                            PROPUESTA TÉCNICA Y ECONÓMICA
                           </span>
                           <span style={{ fontSize: '19px', fontFamily: 'monospace', fontWeight: 700, color: '#1A202C', display: 'block', marginTop: '2px' }}>
                             {safeQuote.codigo}
@@ -462,7 +480,10 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
 
                     {/* DESGLOSE DE PARTIDAS Y CONCEPTOS CON ALINEACIÓN ESTRICTA */}
                     <div style={{ marginBottom: '16px' }}>
-                      {page.partidas.map((partida) => (
+                      {page.partidas.map((partida) => {
+                        const partidaIndex = safeQuote.partidas.findIndex(p => p.id === partida.id);
+                        const partidaNum = partidaIndex !== -1 ? partidaIndex + 1 : 1;
+                        return (
                         <div key={partida.id} style={{ border: '1px solid #E2E8F0', borderRadius: '6px', overflow: 'hidden', marginBottom: '14px', backgroundColor: '#FFFFFF' }}>
                           {/* Barra de título de Partida */}
                           <div style={{ backgroundColor: '#F8FAFC', padding: '6px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', fontWeight: 700, color: '#1A202C', borderBottom: '1px solid #E2E8F0' }}>
@@ -476,8 +497,8 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
                           {/* Tabla con ancho fijo estricto para que todas las columnas coincidan 100% */}
                           <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', backgroundColor: '#FFFFFF' }}>
                             <colgroup>
-                              <col style={{ width: '32px' }} />
-                              <col style={{ width: '268px' }} />
+                              <col style={{ width: '38px' }} />
+                              <col style={{ width: '262px' }} />
                               <col style={{ width: '80px' }} />
                               <col style={{ width: '48px' }} />
                               <col style={{ width: '52px' }} />
@@ -498,8 +519,8 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
                             <tbody>
                               {partida.items.map((item, idx) => (
                                 <tr key={item.id} style={{ borderBottom: '1px solid #F0F4F8', backgroundColor: '#FFFFFF' }}>
-                                  <td style={{ padding: '5px 4px', textAlign: 'center', color: '#A0AEC0', fontFamily: 'monospace', fontSize: '10.5px' }}>
-                                    {idx + 1}
+                                  <td style={{ padding: '5px 4px', textAlign: 'center', color: '#718096', fontFamily: 'monospace', fontSize: '10.5px', fontWeight: 600 }}>
+                                    {`${partidaNum}.${idx + 1}`}
                                   </td>
                                   <td style={{ padding: '5px 8px', textAlign: 'left', fontWeight: 500, color: '#2D3748', fontSize: '10.5px', wordBreak: 'break-word', lineHeight: '1.3' }}>
                                     {item.descripcion}
@@ -524,7 +545,8 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
                             </tbody>
                           </table>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* RESUMEN FINANCIERO Y TÉRMINOS (EN LA ÚLTIMA HOJA) */}
@@ -543,33 +565,54 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
                         {/* Liquidación de Costos */}
                         <div style={{ backgroundColor: '#F8FAFC', padding: '12px 14px', borderRadius: '6px', border: '1px solid #E2E8F0', fontSize: '11px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5568', marginBottom: '5px' }}>
-                            <span>Subtotal Costo Directo:</span>
+                            <span>Subtotal:</span>
                             <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{formatMoneda(costoDirectoTotal)}</span>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5568', marginBottom: '5px' }}>
-                            <span>Imprevistos de Obra ({safeQuote.porcentajeImprevistos}%):</span>
-                            <span style={{ fontFamily: 'monospace' }}>{formatMoneda(montoImprevistos)}</span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5568', marginBottom: '5px' }}>
-                            <span>Gastos Generales y Adm. ({safeQuote.porcentajeGastosGenerales}%):</span>
-                            <span style={{ fontFamily: 'monospace' }}>{formatMoneda(montoGastosGenerales)}</span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#AA8820', fontWeight: 600, borderTop: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0', padding: '5px 0', margin: '3px 0' }}>
-                            <span>Honorarios de Diseño & Dirección ({safeQuote.porcentajeHonorarios}%):</span>
-                            <span style={{ fontFamily: 'monospace' }}>{formatMoneda(montoHonorarios)}</span>
-                          </div>
-                          {safeQuote.aplicaIva && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5568', marginBottom: '5px' }}>
-                              <span>I.V.A. ({safeQuote.porcentajeIva}%):</span>
-                              <span style={{ fontFamily: 'monospace' }}>{formatMoneda(montoIva)}</span>
-                            </div>
+
+                          {isSimplificado ? (
+                            <>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5568', marginBottom: '5px' }}>
+                                <span>Utilidad (base gravable) ({safeQuote.porcentajeAiuGlobal || 28}%):</span>
+                                <span style={{ fontFamily: 'monospace' }}>{formatMoneda(montoAiuGlobal)}</span>
+                              </div>
+
+                              {safeQuote.aplicaIva && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5568', marginBottom: '5px' }}>
+                                  <span>I.V.A. s/ Base Gravable ({safeQuote.porcentajeIva}%):</span>
+                                  <span style={{ fontFamily: 'monospace' }}>{formatMoneda(montoIva)}</span>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5568', marginBottom: '5px' }}>
+                                <span>Administración (A) ({safeQuote.porcentajeAdministracion || safeQuote.porcentajeGastosGenerales}%):</span>
+                                <span style={{ fontFamily: 'monospace' }}>{formatMoneda(montoAdministracion)}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5568', marginBottom: '5px' }}>
+                                <span>Imprevistos (I) ({safeQuote.porcentajeImprevistos}%):</span>
+                                <span style={{ fontFamily: 'monospace' }}>{formatMoneda(montoImprevistos)}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#AA8820', fontWeight: 600, borderTop: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0', padding: '5px 0', margin: '3px 0' }}>
+                                <span>Utilidad (U) ({safeQuote.porcentajeHonorarios}%):</span>
+                                <span style={{ fontFamily: 'monospace' }}>{formatMoneda(montoHonorarios)}</span>
+                              </div>
+                              {safeQuote.aplicaIva && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4A5568', marginBottom: '5px' }}>
+                                  <span>I.V.A. s/ Utilidad ({safeQuote.porcentajeIva}%):</span>
+                                  <span style={{ fontFamily: 'monospace' }}>{formatMoneda(montoIva)}</span>
+                                </div>
+                              )}
+                            </>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: '6px', borderTop: '2px solid #1A202C', marginTop: '4px' }}>
                             <div>
                               <span style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#1A202C', fontSize: '11px', display: 'block' }}>
                                 TOTAL PRESUPUESTO:
                               </span>
-                              <span style={{ fontSize: '9px', color: '#718096' }}>Moneda nacional</span>
+                              <span style={{ fontSize: '9px', color: '#718096' }}>
+                                {isSimplificado ? 'Subtotal + IVA' : 'Costo Directo + AIU + IVA s/ Utilidad'}
+                              </span>
                             </div>
                             <span style={{ fontSize: '18px', fontFamily: 'monospace', fontWeight: 800, color: '#1A202C' }}>
                               {formatMoneda(totalFinal)}
@@ -590,11 +633,8 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
                           <div style={{ fontSize: '9.5px', color: '#4A5568', fontWeight: 600, marginTop: '1px' }}>
                             {safeConfig.especialidad || 'Especialista en gerencia de la construcción'}
                           </div>
-                          <div style={{ fontSize: '9.5px', color: '#718096', marginTop: '1px' }}>
-                            {safeConfig.cedulaProfesional ? `Cédula: ${safeConfig.cedulaProfesional}` : 'Arquitecto Titular'}
-                          </div>
                           <div style={{ fontSize: '9.5px', color: '#AA8820', fontWeight: 600, marginTop: '2px' }}>
-                            <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '11px' }}>conobras</span> Construcción + Arquitectura
+                            Construcción + Arquitectura
                           </div>
                         </div>
 
@@ -604,7 +644,6 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
                           </div>
                           <div style={{ fontWeight: 700, color: '#1A202C' }}>{safeQuote.cliente}</div>
                           <div style={{ fontSize: '9.5px', color: '#718096' }}>Firma de Conformidad del Cliente</div>
-                          <div style={{ fontSize: '9.5px', color: '#A0AEC0' }}>Fecha: ____ / ____ / ________</div>
                         </div>
                       </div>
                     )}
@@ -614,7 +653,6 @@ export const ProposalPdfModal: React.FC<ProposalPdfModalProps> = ({
                   {/* PIE DE PÁGINA INSTITUCIONAL DE CADA HOJA */}
                   <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '8px', marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', color: '#718096' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '12px', color: '#444848' }}>conobras</span>
                       <span style={{ fontWeight: 600, color: '#718096', fontSize: '8.5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CONSTRUCCIÓN + ARQUITECTURA</span>
                       <span style={{ color: '#CBD5E1' }}>•</span>
                       <span>3128710555</span>

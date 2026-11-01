@@ -34,8 +34,8 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
     },
     {
       id: 'materiales' as ActiveTab,
-      label: 'Catálogo de Insumos',
-      shortLabel: 'Catálogo Insumos',
+      label: "APU'S / Insumos",
+      shortLabel: "APU'S",
       icon: Layers,
       badge: materialsCount > 0 ? materialsCount : null,
       glowColor: 'rgba(56, 189, 248, 0.4)'

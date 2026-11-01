@@ -47,13 +47,24 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
       return sumP + items.reduce((sumI, i) => sumI + (Number(i?.cantidad || 0) * Number(i?.precioUnitario || 0)), 0);
     }, 0);
 
-    const imprevistos = costoDirecto * (Number(quote?.porcentajeImprevistos || 0) / 100);
-    const gastosGrales = costoDirecto * (Number(quote?.porcentajeGastosGenerales || 0) / 100);
-    const subtotalOp = costoDirecto + imprevistos + gastosGrales;
-    const honorarios = subtotalOp * (Number(quote?.porcentajeHonorarios || 0) / 100);
-    const subtotalSinIva = subtotalOp + honorarios;
-    const iva = quote?.aplicaIva ? subtotalSinIva * (Number(quote?.porcentajeIva || 0) / 100) : 0;
-    return subtotalSinIva + iva;
+    const isSimplificado = quote?.modoCalculo === 'SIMPLIFICADO';
+    if (isSimplificado) {
+      const aiuGlobalPct = Number(quote?.porcentajeAiuGlobal !== undefined ? quote.porcentajeAiuGlobal : 28);
+      const montoAiu = costoDirecto * (aiuGlobalPct / 100);
+      const subtotalConAiu = costoDirecto + montoAiu;
+      const iva = quote?.aplicaIva ? montoAiu * (Number(quote?.porcentajeIva || 0) / 100) : 0;
+      return subtotalConAiu + iva;
+    } else {
+      const pAdm = Number(quote?.porcentajeAdministracion ?? quote?.porcentajeGastosGenerales ?? 8);
+      const pImp = Number(quote?.porcentajeImprevistos ?? 5);
+      const pUtil = Number(quote?.porcentajeHonorarios ?? 15);
+      const montoAdm = costoDirecto * (pAdm / 100);
+      const montoImp = costoDirecto * (pImp / 100);
+      const montoUtil = costoDirecto * (pUtil / 100);
+      // En modo desglosado, el IVA se cobra únicamente sobre la Utilidad (U)
+      const iva = quote?.aplicaIva ? montoUtil * (Number(quote?.porcentajeIva || 0) / 100) : 0;
+      return costoDirecto + montoAdm + montoImp + montoUtil + iva;
+    }
   };
 
   // Estadísticas KPI acumuladas

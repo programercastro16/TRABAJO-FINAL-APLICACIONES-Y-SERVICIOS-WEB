@@ -133,15 +133,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ config, onRefresh })
                 />
               </div>
               <div>
-                <label className="text-[11px] text-[#586274] block mb-1">Cédula Profesional / Matrícula</label>
-                <input
-                  type="text"
-                  value={formData.cedulaProfesional}
-                  onChange={(e) => setFormData({ ...formData, cedulaProfesional: e.target.value })}
-                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs font-mono text-[#9E7A18] font-bold focus:outline-none focus:border-[#D4AF37]"
-                />
-              </div>
-              <div>
                 <label className="text-[11px] text-[#586274] block mb-1">Teléfono Directo</label>
                 <input
                   type="text"
@@ -166,14 +157,61 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ config, onRefresh })
         {/* PARÁMETROS BASE DE COTIZACIÓN */}
         <TiltCard maxTilt={3}>
           <div className="p-6 rounded-2xl bg-white border border-[#C5CAD2] space-y-4 hover:border-[#D4AF37]/50 transition-colors shadow-sm">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#9E7A18] border-b border-[#C5CAD2] pb-3">
-              <Percent size={16} />
-              <span>Porcentajes Predeterminados para Nuevos Presupuestos</span>
+            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#9E7A18] border-b border-[#C5CAD2] pb-3">
+              <div className="flex items-center gap-2">
+                <Percent size={16} />
+                <span>Modalidad y Porcentajes para Nuevos Presupuestos</span>
+              </div>
+              <span className="font-mono text-[10px] text-[#586274] font-semibold">ARQUITECTURA DE COSTOS</span>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Modalidad por Defecto */}
+            <div>
+              <label className="text-[11px] font-semibold text-[#111622] block mb-1.5">
+                Modalidad de Presupuesto Predeterminada
+              </label>
+              <div className="grid grid-cols-2 gap-3 max-w-md">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, modoCalculoDefault: 'DESGLOSADO' })}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                    (formData.modoCalculoDefault || 'DESGLOSADO') === 'DESGLOSADO'
+                      ? 'bg-[#111622] text-[#D4AF37] border-[#111622] shadow-sm'
+                      : 'bg-[#F8F9FA] text-[#586274] border-[#C8CDD5] hover:bg-white'
+                  }`}
+                >
+                  Modo 1: Desglosado (AIU)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, modoCalculoDefault: 'SIMPLIFICADO' })}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                    formData.modoCalculoDefault === 'SIMPLIFICADO'
+                      ? 'bg-[#111622] text-[#D4AF37] border-[#111622] shadow-sm'
+                      : 'bg-[#F8F9FA] text-[#586274] border-[#C8CDD5] hover:bg-white'
+                  }`}
+                >
+                  Modo 2: Simplificado
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2">
               <div>
-                <label className="text-[11px] text-[#586274] block mb-1">Imprevistos (%)</label>
+                <label className="text-[11px] text-[#586274] block mb-1">Administración [A] (%)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={formData.porcentajeAdministracionDefault ?? formData.porcentajeGastosGeneralesDefault ?? 8}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
+                    setFormData({ ...formData, porcentajeAdministracionDefault: val, porcentajeGastosGeneralesDefault: val });
+                  }}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs font-mono text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Imprevistos [I] (%)</label>
                 <input
                   type="number"
                   step="0.5"
@@ -183,23 +221,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ config, onRefresh })
                 />
               </div>
               <div>
-                <label className="text-[11px] text-[#586274] block mb-1">Gastos Generales (%)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={formData.porcentajeGastosGeneralesDefault}
-                  onChange={(e) => setFormData({ ...formData, porcentajeGastosGeneralesDefault: parseFloat(e.target.value) || 0 })}
-                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs font-mono text-[#111622] focus:outline-none focus:border-[#D4AF37]"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] text-[#586274] block mb-1">Honorarios / Utilidad (%)</label>
+                <label className="text-[11px] text-[#586274] block mb-1">Utilidad [U] (%)</label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.porcentajeHonorariosDefault}
                   onChange={(e) => setFormData({ ...formData, porcentajeHonorariosDefault: parseFloat(e.target.value) || 0 })}
                   className="w-full bg-[#F8F9FA] border border-[#D4AF37]/50 rounded-lg px-3 py-2 text-xs font-mono text-[#9E7A18] font-bold focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Utilidad (base gravable) - Modo 2 (%)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={formData.porcentajeAiuGlobalDefault ?? 28}
+                  onChange={(e) => setFormData({ ...formData, porcentajeAiuGlobalDefault: parseFloat(e.target.value) || 0 })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs font-mono text-[#111622] focus:outline-none focus:border-[#D4AF37]"
                 />
               </div>
               <div>

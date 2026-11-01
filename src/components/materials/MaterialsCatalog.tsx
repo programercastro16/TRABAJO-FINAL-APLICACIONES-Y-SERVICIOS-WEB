@@ -171,14 +171,14 @@ export const MaterialsCatalog: React.FC<MaterialsCatalogProps> = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('¿Deseas eliminar este insumo del catálogo local?')) {
+    if (confirm('¿Deseas eliminar este insumo de la base de APU\'S?')) {
       await storageService.deleteMaterial(id);
       onRefresh();
     }
   };
 
   const handleResetCatalog = async () => {
-    if (confirm('¿Restablecer el catálogo con los insumos predeterminados de Conobras?')) {
+    if (confirm('¿Restablecer la base de APU\'S con los insumos predeterminados de Conobras?')) {
       for (const item of SEED_INSUMOS) {
         await storageService.saveMaterial(item);
       }
@@ -205,30 +205,30 @@ export const MaterialsCatalog: React.FC<MaterialsCatalogProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* HEADER DEL CATÁLOGO */}
+      {/* HEADER DE APU'S */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white border border-[#C5CAD2] shadow-sm">
         <div>
           <div className="flex items-center gap-2">
             <Boxes className="text-[#9E7A18]" size={22} />
             <h2 className="text-lg font-bold text-[#111622] tracking-wide uppercase">
-              Catálogo de Materiales & Insumos
+              APU'S · Materiales & Insumos de Obra
             </h2>
           </div>
           <p className="text-xs text-[#586274] mt-0.5">
-            Base de datos de precios unitarios <span className="font-brand font-bold lowercase text-xs">conobras</span>. Haz clic sobre cualquier precio para editarlo en tiempo real.
+            Base de análisis de precios unitarios e insumos <span className="font-brand font-bold lowercase text-xs">conobras</span>. Haz clic sobre cualquier precio para editarlo en tiempo real.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <ShimmerBadge variant="cyan" icon={<Layers size={13} />}>
-            <span>{filteredMaterials.length} Insumos Activos</span>
+            <span>{filteredMaterials.length} APU'S Activos</span>
           </ShimmerBadge>
 
           <InteractiveButton
             variant="glass"
             size="sm"
             onClick={handleResetCatalog}
-            title="Cargar catálogo base recomendado"
+            title="Cargar base de APU'S recomendada"
             icon={<RotateCcw size={14} className="text-[#586274]" />}
           >
             Restablecer
@@ -389,7 +389,7 @@ export const MaterialsCatalog: React.FC<MaterialsCatalogProps> = ({
             <div className="flex items-center justify-between p-5 border-b border-[#C5CAD2] bg-[#EEF1F5]">
               <h3 className="font-bold text-sm text-[#111622] uppercase tracking-wider flex items-center gap-2">
                 <Tag size={16} className="text-[#9E7A18]" />
-                <span>{editingItem ? 'Editar Insumo de Obra' : 'Nuevo Insumo de Catálogo'}</span>
+                <span>{editingItem ? 'Editar Ítem de APU\'S' : 'Nuevo Ítem de APU\'S'}</span>
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
