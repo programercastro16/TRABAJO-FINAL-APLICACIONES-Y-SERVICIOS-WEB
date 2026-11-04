@@ -1,0 +1,273 @@
+import React, { useState } from 'react';
+import { Settings, Save, Building2, User, Percent, DollarSign, Check, Phone, Mail, Globe, ShieldCheck } from 'lucide-react';
+import { ConfiguracionEmpresa } from '../../types';
+import { storageService } from '../../services/storageService';
+import { TiltCard } from '../common/TiltCard';
+import { InteractiveButton } from '../common/InteractiveButton';
+import { ShimmerBadge } from '../common/AnimatedText';
+
+interface SettingsViewProps {
+  config: ConfiguracionEmpresa;
+  onRefresh: () => void;
+}
+
+export const SettingsView: React.FC<SettingsViewProps> = ({ config, onRefresh }) => {
+  const [formData, setFormData] = useState<ConfiguracionEmpresa>(config);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await storageService.saveConfig(formData);
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3000);
+    onRefresh();
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white border border-[#C5CAD2] shadow-sm">
+        <div>
+          <div className="flex items-center gap-2">
+            <Settings className="text-[#9E7A18]" size={22} />
+            <h2 className="text-lg font-bold text-[#111622] tracking-wide uppercase">
+              Configuración de Estudio & Marca
+            </h2>
+          </div>
+          <p className="text-xs text-[#586274] mt-0.5">
+            Personaliza los datos institucionales de <span className="font-brand font-bold lowercase text-sm">conobras</span>, perfil del arquitecto y porcentajes base
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {savedSuccess && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#DCFCE7] border border-[#16A34A]/30 text-[#15803D] text-xs font-semibold animate-in fade-in">
+              <Check size={14} />
+              <span>Guardado en SQLite</span>
+            </div>
+          )}
+
+          <ShimmerBadge variant="emerald" icon={<ShieldCheck size={13} />}>
+            Base SQLite Local
+          </ShimmerBadge>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* IDENTIDAD CORPORATIVA */}
+        <TiltCard maxTilt={3}>
+          <div className="p-6 rounded-2xl bg-white border border-[#C5CAD2] space-y-4 hover:border-[#D4AF37]/50 transition-colors shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#9E7A18] border-b border-[#C5CAD2] pb-3">
+              <Building2 size={16} />
+              <span>Datos Institucionales (<span className="font-brand font-bold lowercase text-sm text-[#111622]">conobras</span>)</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Nombre Comercial</label>
+                <input
+                  type="text"
+                  value={formData.nombreEmpresa}
+                  onChange={(e) => setFormData({ ...formData, nombreEmpresa: e.target.value })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Eslogan Institucional</label>
+                <input
+                  type="text"
+                  value={formData.eslogan}
+                  onChange={(e) => setFormData({ ...formData, eslogan: e.target.value })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Dirección de Oficina / Estudio</label>
+                <input
+                  type="text"
+                  value={formData.direccion}
+                  onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Sitio Web / Portfolio</label>
+                <input
+                  type="text"
+                  value={formData.sitioWeb || ''}
+                  onChange={(e) => setFormData({ ...formData, sitioWeb: e.target.value })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+            </div>
+          </div>
+        </TiltCard>
+
+        {/* DATOS DEL ARQUITECTO TITULAR */}
+        <TiltCard maxTilt={3}>
+          <div className="p-6 rounded-2xl bg-white border border-[#C5CAD2] space-y-4 hover:border-[#D4AF37]/50 transition-colors shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#9E7A18] border-b border-[#C5CAD2] pb-3">
+              <User size={16} />
+              <span>Perfil Profesional del Arquitecto</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Nombre del Arquitecto / Responsable</label>
+                <input
+                  type="text"
+                  value={formData.arquitecto}
+                  onChange={(e) => setFormData({ ...formData, arquitecto: e.target.value })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Especialidad / Postgrado</label>
+                <input
+                  type="text"
+                  value={formData.especialidad || ''}
+                  placeholder="Especialista en Gerencia de la Construcción"
+                  onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Teléfono Directo</label>
+                <input
+                  type="text"
+                  value={formData.telefono}
+                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Correo Electrónico</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+            </div>
+          </div>
+        </TiltCard>
+
+        {/* PARÁMETROS BASE DE COTIZACIÓN */}
+        <TiltCard maxTilt={3}>
+          <div className="p-6 rounded-2xl bg-white border border-[#C5CAD2] space-y-4 hover:border-[#D4AF37]/50 transition-colors shadow-sm">
+            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#9E7A18] border-b border-[#C5CAD2] pb-3">
+              <div className="flex items-center gap-2">
+                <Percent size={16} />
+                <span>Modalidad y Porcentajes para Nuevos Presupuestos</span>
+              </div>
+              <span className="font-mono text-[10px] text-[#586274] font-semibold">ARQUITECTURA DE COSTOS</span>
+            </div>
+
+            {/* Modalidad por Defecto */}
+            <div>
+              <label className="text-[11px] font-semibold text-[#111622] block mb-1.5">
+                Modalidad de Presupuesto Predeterminada
+              </label>
+              <div className="grid grid-cols-2 gap-3 max-w-md">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, modoCalculoDefault: 'DESGLOSADO' })}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                    (formData.modoCalculoDefault || 'DESGLOSADO') === 'DESGLOSADO'
+                      ? 'bg-[#111622] text-[#D4AF37] border-[#111622] shadow-sm'
+                      : 'bg-[#F8F9FA] text-[#586274] border-[#C8CDD5] hover:bg-white'
+                  }`}
+                >
+                  Modo 1: Desglosado (AIU)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, modoCalculoDefault: 'SIMPLIFICADO' })}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                    formData.modoCalculoDefault === 'SIMPLIFICADO'
+                      ? 'bg-[#111622] text-[#D4AF37] border-[#111622] shadow-sm'
+                      : 'bg-[#F8F9FA] text-[#586274] border-[#C8CDD5] hover:bg-white'
+                  }`}
+                >
+                  Modo 2: Simplificado
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2">
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Administración [A] (%)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={formData.porcentajeAdministracionDefault ?? formData.porcentajeGastosGeneralesDefault ?? 8}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
+                    setFormData({ ...formData, porcentajeAdministracionDefault: val, porcentajeGastosGeneralesDefault: val });
+                  }}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs font-mono text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Imprevistos [I] (%)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={formData.porcentajeImprevistosDefault}
+                  onChange={(e) => setFormData({ ...formData, porcentajeImprevistosDefault: parseFloat(e.target.value) || 0 })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs font-mono text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Utilidad [U] (%)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={formData.porcentajeHonorariosDefault}
+                  onChange={(e) => setFormData({ ...formData, porcentajeHonorariosDefault: parseFloat(e.target.value) || 0 })}
+                  className="w-full bg-[#F8F9FA] border border-[#D4AF37]/50 rounded-lg px-3 py-2 text-xs font-mono text-[#9E7A18] font-bold focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Utilidad (base gravable) - Modo 2 (%)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={formData.porcentajeAiuGlobalDefault ?? 28}
+                  onChange={(e) => setFormData({ ...formData, porcentajeAiuGlobalDefault: parseFloat(e.target.value) || 0 })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs font-mono text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#586274] block mb-1">Tasa IVA Base (%)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={formData.porcentajeIvaDefault}
+                  onChange={(e) => setFormData({ ...formData, porcentajeIvaDefault: parseFloat(e.target.value) || 0 })}
+                  className="w-full bg-[#F8F9FA] border border-[#C8CDD5] rounded-lg px-3 py-2 text-xs font-mono text-[#111622] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+            </div>
+          </div>
+        </TiltCard>
+
+        {/* BOTÓN GUARDAR */}
+        <div className="flex justify-end pt-2">
+          <InteractiveButton
+            type="submit"
+            variant="gold"
+            size="lg"
+            shimmer={true}
+            glow={true}
+            icon={<Save size={16} />}
+          >
+            Guardar Parámetros en SQLite
+          </InteractiveButton>
+        </div>
+      </form>
+    </div>
+  );
+};

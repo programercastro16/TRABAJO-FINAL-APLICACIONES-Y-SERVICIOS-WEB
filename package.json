@@ -1,6 +1,7 @@
 {
   "name": "conobras-quote",
   "version": "1.0.0",
+  "type": "module",
   "description": "Conobras Quote - Presupuestos y Costos Arquitectonicos",
   "main": "electron/main.cjs",
   "scripts": {
@@ -62,6 +63,7 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "axios": "^1.7.9",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
     "lucide-react": "^1.16.0",
@@ -78,6 +80,7 @@
     "concurrently": "^9.1.2",
     "electron": "^34.3.0",
     "electron-builder": "^25.1.8",
+    "laravel-vite-plugin": "^1.2.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",

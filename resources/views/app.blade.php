@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/x-icon" href="/assets/conobras-logo.ico" />
+    <link rel="icon" type="image/png" href="/assets/conobras-logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>conobras quote - Presupuestos y Costos Arquitectónicos</title>
+    <!-- Google Fonts: Plus Jakarta Sans, Outfit & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    @viteReactRefresh
+    @vite(['resources/css/app.css', 'resources/js/main.tsx'])
+  </head>
+  <body class="bg-[#D6D9DE] text-[#111622] antialiased selection:bg-[#D4AF37]/30 selection:text-[#111622] overflow-hidden">
+    <div id="root"></div>
+  </body>
+</html>
