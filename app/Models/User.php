@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'phone', 'role', 'company', 'avatar'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -27,6 +27,23 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+        ];
+    }
+
+    /**
+     * Convert the model to a clean array for the frontend.
+     */
+    public function toFrontendArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'phone' => $this->phone ?? '',
+            'role' => $this->role ?? 'Arquitecto / Administrador',
+            'company' => $this->company ?? 'Conobras Construcción + Arquitectura',
+            'avatar' => $this->avatar ?? '',
+            'created_at' => $this->created_at ? $this->created_at->toISOString() : date('c'),
         ];
     }
 }

@@ -4,12 +4,24 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CotizacionController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\AuthController;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes - Conobras Costing Pro
 |--------------------------------------------------------------------------
 */
+
+// Authentication & Profile / Autenticación y Perfil
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
 
 // Quotes / Cotizaciones
 Route::get('/quotes', [CotizacionController::class, 'index']);

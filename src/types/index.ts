@@ -131,3 +131,49 @@ export interface ConfiguracionEmpresa {
   porcentajeAiuGlobalDefault?: number;
   porcentajeIvaDefault: number;
 }
+
+export interface User {
+  id: string | number;
+  name: string;
+  email: string;
+  phone?: string;
+  role?: string;
+  company?: string;
+  avatar?: string;
+  token?: string;
+  created_at?: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+  password_confirmation?: string;
+  phone?: string;
+  role?: string;
+  company?: string;
+}
+
+export interface LoginData {
+  email: string;
+  password: string;
+  remember?: boolean;
+}
+
+export interface UpdateProfileData {
+  name: string;
+  email: string;
+  phone?: string;
+  role?: string;
+  company?: string;
+  current_password?: string;
+  new_password?: string;
+  new_password_confirmation?: string;
+}
+
+export interface ResetPasswordData {
+  email: string;
+  token: string;
+  password: string;
+  password_confirmation?: string;
+}

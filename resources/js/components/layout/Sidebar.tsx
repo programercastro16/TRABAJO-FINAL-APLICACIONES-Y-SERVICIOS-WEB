@@ -9,10 +9,13 @@ import {
   Cpu,
   Database,
   Sparkles,
-  Zap
+  Zap,
+  User as UserIcon,
+  LogOut
 } from 'lucide-react';
 import { Mini3DGyro } from '../common/Mini3DGyro';
 import { TiltCard } from '../common/TiltCard';
+import { User } from '../../types';
 
 export type ActiveTab = 'cotizador' | 'materiales' | 'historial' | 'configuracion';
 
@@ -21,13 +24,19 @@ interface SidebarProps {
   setActiveTab: (tab: ActiveTab) => void;
   quotesCount: number;
   materialsCount: number;
+  user?: User | null;
+  onOpenProfile?: () => void;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
   quotesCount,
-  materialsCount
+  materialsCount,
+  user,
+  onOpenProfile,
+  onLogout,
 }) => {
   const navItems = [
     {
@@ -63,6 +72,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       color: '#48BB78'
     }
   ];
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'CO';
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part[0]?.toUpperCase() || '')
+      .join('');
+  };
 
   return (
     <aside className="w-64 bg-[#DEE2E7]/95 backdrop-blur-xl border-r border-[#C5CAD2] flex flex-col justify-between select-none shrink-0 no-print z-20 relative shadow-sm">
@@ -174,8 +193,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* FOOTER LOCAL DESKTOP STATUS CON RADAR DE ESTADO */}
-      <div className="p-3.5 border-t border-[#C5CAD2] bg-[#D6D9DE]">
+      {/* FOOTER: USUARIO LOGUEADO & ESTADO OFFLINE */}
+      <div className="p-3 border-t border-[#C5CAD2] bg-[#D6D9DE] space-y-2">
+        {/* TARJETA DEL USUARIO LOGUEADO */}
+        {user && (
+          <div className="p-2.5 rounded-xl bg-gradient-to-r from-[#111622] to-[#1A2234] text-white border border-[#2D3748] shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-[#D4AF37] to-[#FACA14] text-black font-bold text-[11px] flex items-center justify-center shrink-0 shadow-sm">
+                  {getInitials(user.name)}
+                </div>
+                <div className="overflow-hidden">
+                  <div className="text-[11px] font-bold text-white truncate leading-tight">
+                    {user.name}
+                  </div>
+                  <div className="text-[9px] text-[#94A3B8] truncate leading-tight">
+                    {user.role || 'Arquitecto Titular'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* BOTONES DE ACCIÓN RÁPIDA: PERFIL Y LOGOUT */}
+            <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/10">
+              <button
+                type="button"
+                onClick={onOpenProfile}
+                className="flex-1 py-1 px-2 rounded-lg bg-white/10 hover:bg-[#D4AF37]/20 hover:text-[#FACA14] text-[10px] font-semibold text-white/90 flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                title="Editar mi información de perfil"
+              >
+                <UserIcon size={12} className="text-[#FACA14]" />
+                <span>Perfil</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onLogout}
+                className="py-1 px-2 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-400 hover:text-red-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                title="Cerrar sesión del sistema"
+              >
+                <LogOut size={12} />
+                <span>Salir</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ESTADO SQLITE */}
         <div className="p-2.5 rounded-xl bg-white/90 border border-[#C5CAD2] shadow-sm space-y-1.5">
           <div className="flex items-center justify-between text-[11px] text-[#586274]">
             <div className="flex items-center gap-2">
@@ -190,7 +254,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </div>
 
-          <div className="text-[9px] text-[#586274] flex items-center justify-between font-mono pt-1 border-t border-[#E2E6EB]">
+          <div className="text-[9px] text-[#586274] flex items-center justify-between font-mono pt-1 border-t border-[#E2E8F0]">
             <span>MODO OFFLINE</span>
             <span className="text-[#0284C7] font-semibold">CAD / 3D ACTIVO</span>
           </div>

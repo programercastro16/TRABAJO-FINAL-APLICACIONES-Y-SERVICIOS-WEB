@@ -8,8 +8,11 @@ import { QuoteHistory } from './components/history/QuoteHistory';
 import { SettingsView } from './components/settings/SettingsView';
 import { ProposalPdfModal } from './components/quote/ProposalPdfModal';
 import { AmbientBackground3D } from './components/common/AmbientBackground3D';
-import { Cotizacion, Insumo, ConfiguracionEmpresa } from './types';
+import { AuthView } from './components/auth/AuthView';
+import { UserProfileModal } from './components/auth/UserProfileModal';
+import { Cotizacion, Insumo, ConfiguracionEmpresa, User } from './types';
 import { storageService } from './services/storageService';
+import { authService } from './services/authService';
 import { DEFAULT_CONFIG } from './data/seedData';
 
 // Generador de cotización completamente vacía (sin datos prellenados)
@@ -90,6 +93,10 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 }
 
 export const App: React.FC = () => {
+  // Estado del usuario activo
+  const [currentUser, setCurrentUser] = useState<User | null>(() => authService.getCurrentUser());
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('cotizador');
   const [quotes, setQuotes] = useState<Cotizacion[]>([]);
   const [materials, setMaterials] = useState<Insumo[]>([]);
@@ -113,8 +120,17 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentUser) {
+      loadData();
+    }
+  }, [currentUser]);
+
+  const handleLogout = async () => {
+    if (window.confirm('¿Deseas cerrar sesión en Conobras Quote?')) {
+      await authService.logout();
+      setCurrentUser(null);
+    }
+  };
 
   const handleNewQuote = () => {
     const newQuote = createEmptyQuote(config || DEFAULT_CONFIG, quotes.length);
@@ -155,6 +171,17 @@ export const App: React.FC = () => {
     setActiveTab('cotizador');
   };
 
+  // Si no hay usuario autenticado, desplegar pantalla de registro / inicio de sesión
+  if (!currentUser) {
+    return (
+      <AuthView
+        onAuthenticated={(user) => {
+          setCurrentUser(user);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="relative flex h-screen w-screen bg-[#D6D9DE] text-[#111622] overflow-hidden select-none font-sans">
       {/* FONDO DINÁMICO 3D CON PARTÍCULAS Y OBJETOS VOLANDO EN EL ESPACIO */}
@@ -166,6 +193,9 @@ export const App: React.FC = () => {
         setActiveTab={setActiveTab}
         quotesCount={quotes.length}
         materialsCount={materials.length}
+        user={currentUser}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* ÁREA DE CONTENIDO PRINCIPAL */}
@@ -173,6 +203,10 @@ export const App: React.FC = () => {
         <Header 
           onNewQuote={handleNewQuote}
           onOpenCatalog={() => setActiveTab('materiales')}
+          user={currentUser}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
+          onLogout={handleLogout}
+          onOpenSettings={() => setActiveTab('configuracion')}
         />
 
         {/* NAVEGACIÓN TABS SUPERIOR */}
@@ -240,6 +274,18 @@ export const App: React.FC = () => {
             onClose={() => setPreviewQuote(null)}
           />
         </ErrorBoundary>
+      )}
+
+      {/* MODAL DE EDICIÓN DE PERFIL DEL USUARIO */}
+      {currentUser && (
+        <UserProfileModal
+          user={currentUser}
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          onUserUpdated={(updatedUser) => {
+            setCurrentUser(updatedUser);
+          }}
+        />
       )}
     </div>
   );
