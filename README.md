@@ -50,8 +50,8 @@ php artisan migrate:fresh --seed
    - **Rutas API**: Definidas en `routes/api.php` bajo `/api/quotes`, `/api/materials` y `/api/config`.
    - **Rutas Web**: Definidas en `routes/web.php` sirviendo la vista Blade principal `resources/views/app.blade.php`.
 
-2. **Base de Datos SQLite**:
-   - Almacenamiento local ultrarrápido y sin necesidad de servicios externos en `database/database.sqlite`.
+2. **Base de Datos MySQL**:
+   - Almacenamiento local ultrarrápido y sin necesidad de servicios externos en `database/database.mysql`.
    - Migraciones estructuradas en `database/migrations/`.
    - Sembrado de catálogo e insumos iniciales en `database/seeders/`.
 
@@ -63,7 +63,7 @@ php artisan migrate:fresh --seed
 
 ---
 
-## 💾 Dónde se Guardan tus Datos (SQLite)
+## 💾 Dónde se Guardan tus Datos (MySQL)
 Toda la información se gestiona a través de Laravel Eloquent en el archivo local:
 ```text
 database/database.sqlite
