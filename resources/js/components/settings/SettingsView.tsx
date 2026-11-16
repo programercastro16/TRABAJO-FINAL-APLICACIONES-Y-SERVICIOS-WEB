@@ -17,10 +17,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ config, onRefresh })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await storageService.saveConfig(formData);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
-    onRefresh();
+
+    try {
+      await storageService.saveConfig(formData);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+      onRefresh();
+    } catch (error) {
+      console.error('Error al guardar la configuración:', error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar la configuración.'
+      );
+    }
   };
 
   return (
@@ -43,12 +53,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ config, onRefresh })
           {savedSuccess && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#DCFCE7] border border-[#16A34A]/30 text-[#15803D] text-xs font-semibold animate-in fade-in">
               <Check size={14} />
-              <span>Guardado en SQLite</span>
+              <span>Guardado Correctamente</span>
             </div>
           )}
 
           <ShimmerBadge variant="emerald" icon={<ShieldCheck size={13} />}>
-            Base SQLite Local
+            Base de Datos: SQLite Local Engine
           </ShimmerBadge>
         </div>
       </div>
@@ -264,7 +274,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ config, onRefresh })
             glow={true}
             icon={<Save size={16} />}
           >
-            Guardar Parámetros en SQLite
+            Guardar Configuración
           </InteractiveButton>
         </div>
       </form>

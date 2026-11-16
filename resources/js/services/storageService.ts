@@ -1,7 +1,13 @@
-import { Insumo, Cotizacion, Cliente, ConfiguracionEmpresa } from '../types';
-import { SEED_INSUMOS, DEFAULT_CONFIG } from '../data/seedData';
 
-// Declaración global para la API de Electron si existe
+import {
+  Insumo,
+  Cotizacion,
+  ConfiguracionEmpresa
+} from '../types';
+
+import { DEFAULT_CONFIG } from '../data/seedData';
+
+// Compatibilidad con la API de Electron, si se ejecuta en ese entorno
 declare global {
   interface Window {
     electronAPI?: {
@@ -15,291 +21,240 @@ declare global {
       getConfig: () => Promise<ConfiguracionEmpresa>;
       saveConfig: (config: ConfiguracionEmpresa) => Promise<boolean>;
       exportPdf: (data: any) => Promise<string>;
-      savePdfFile?: (data: { filename: string; base64Data: string }) => Promise<string | null>;
+      savePdfFile?: (data: {
+        filename: string;
+        base64Data: string;
+      }) => Promise<string | null>;
     };
   }
 }
 
-const STORAGE_KEYS = {
-  QUOTES: 'conobras_quotes_v1',
-  MATERIALS: 'conobras_materials_v1',
-  CLIENTS: 'conobras_clients_v1',
-  CONFIG: 'conobras_config_v1'
+const AUTH_TOKEN_KEY = 'conobras_auth_token_v1';
+
+// Obtener el token de autenticación de Sanctum
+const getAuthToken = (): string => {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+
+  if (!token) {
+    throw new Error(
+      'No existe una sesión autenticada. Inicia sesión nuevamente.'
+    );
+  }
+
+  return token;
 };
 
-const getCsrfToken = (): string => {
-  const meta = document.querySelector('meta[name="csrf-token"]');
-  return meta ? meta.getAttribute('content') || '' : '';
-};
-
-const defaultHeaders = () => ({
+// Encabezados para las peticiones autenticadas
+const defaultHeaders = (): HeadersInit => ({
   'Content-Type': 'application/json',
   'Accept': 'application/json',
-  'X-CSRF-TOKEN': getCsrfToken(),
+  'Authorization': `Bearer ${getAuthToken()}`,
   'X-Requested-With': 'XMLHttpRequest'
 });
 
+// Función centralizada para comunicarse con Laravel
+async function apiRequest<T>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...defaultHeaders(),
+      ...(options.headers || {})
+    }
+  });
+
+  // Manejo de errores HTTP
+  if (!response.ok) {
+    let message = `Error HTTP ${response.status}`;
+
+    try {
+      const errorData = await response.json();
+
+      if (errorData.message) {
+        message = errorData.message;
+      } else if (errorData.errors) {
+        message = Object.values(errorData.errors)
+          .flat()
+          .join(' ');
+      }
+    } catch {
+      // Mantener el mensaje HTTP original
+    }
+
+    if (response.status === 401) {
+      throw new Error(
+        'Tu sesión ha expirado. Inicia sesión nuevamente.'
+      );
+    }
+
+    if (response.status === 403) {
+      throw new Error(
+        'No tienes permisos para realizar esta operación.'
+      );
+    }
+
+    throw new Error(message);
+  }
+
+  // Respuestas sin contenido, por ejemplo HTTP 204
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const contentType = response.headers.get('content-type');
+
+  if (contentType?.includes('application/json')) {
+    return await response.json() as T;
+  }
+
+  return undefined as T;
+}
+
 class StorageService {
-  // --- COTIZACIONES (QUOTES) ---
+
+  // ==========================================
+  // COTIZACIONES
+  // ==========================================
+
   async getQuotes(): Promise<Cotizacion[]> {
-    // 1. Intentar API Laravel
-    try {
-      const res = await fetch('/api/quotes', {
-        headers: defaultHeaders()
-      });
-      if (res.ok) {
-        const quotes: Cotizacion[] = await res.json();
-        const filtered = (quotes || []).filter(q => q.id !== 'cot-001');
-        localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(filtered));
-        return filtered;
-      }
-    } catch {
-      // Continuar al siguiente fallback
+    // Electron
+    if (window.electronAPI?.isElectron) {
+      return await window.electronAPI.getQuotes();
     }
 
-    // 2. Intentar Electron API
-    if (window.electronAPI?.getQuotes) {
-      try {
-        const electronQuotes = await window.electronAPI.getQuotes();
-        return (electronQuotes || []).filter(q => q.id !== 'cot-001');
-      } catch (e) {
-        console.warn('Fallback a local storage para cotizaciones:', e);
-      }
-    }
+    // Laravel
+    const quotes = await apiRequest<Cotizacion[]>(
+      '/api/quotes'
+    );
 
-    // 3. Fallback LocalStorage
-    const data = localStorage.getItem(STORAGE_KEYS.QUOTES);
-    if (!data) return [];
-    try {
-      const parsed: Cotizacion[] = JSON.parse(data);
-      return parsed.filter(q => q.id !== 'cot-001');
-    } catch {
-      return [];
-    }
+    return (quotes || []).filter(
+      quote => quote.id !== 'cot-001'
+    );
   }
 
   async saveQuote(quote: Cotizacion): Promise<void> {
-    // Sincronizar en cache local inmediatamente para UI optimista
-    const localQuotes = await this.getQuotes();
-    const existingIndex = localQuotes.findIndex(q => q.id === quote.id);
-    if (existingIndex >= 0) {
-      localQuotes[existingIndex] = { ...quote, actualizadoEn: new Date().toISOString() };
-    } else {
-      localQuotes.unshift({ ...quote, creadoEn: new Date().toISOString(), actualizadoEn: new Date().toISOString() });
+    // Electron
+    if (window.electronAPI?.isElectron) {
+      await window.electronAPI.saveQuote(quote);
+      return;
     }
-    localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(localQuotes));
 
-    // 1. Guardar en API Laravel (Eloquent + SQLite)
-    try {
-      await fetch('/api/quotes', {
+    // Laravel
+    await apiRequest<void>(
+      '/api/quotes',
+      {
         method: 'POST',
-        headers: defaultHeaders(),
         body: JSON.stringify(quote)
-      });
-    } catch (e) {
-      console.warn('No se pudo sincronizar cotización con el backend Laravel:', e);
-    }
-
-    // 2. Guardar en Electron si existe
-    if (window.electronAPI?.saveQuote) {
-      try {
-        await window.electronAPI.saveQuote(quote);
-      } catch (e) {
-        console.warn('Fallback a local storage para guardar cotización en Electron:', e);
       }
-    }
+    );
   }
 
   async deleteQuote(id: string): Promise<void> {
-    // Sincronizar cache local
-    const localQuotes = await this.getQuotes();
-    const filtered = localQuotes.filter(q => q.id !== id);
-    localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(filtered));
-
-    // 1. Eliminar en API Laravel
-    try {
-      await fetch(`/api/quotes/${id}`, {
-        method: 'DELETE',
-        headers: defaultHeaders()
-      });
-    } catch (e) {
-      console.warn('No se pudo eliminar cotización en el backend Laravel:', e);
+    // Electron
+    if (window.electronAPI?.isElectron) {
+      await window.electronAPI.deleteQuote(id);
+      return;
     }
 
-    // 2. Eliminar en Electron
-    if (window.electronAPI?.deleteQuote) {
-      try {
-        await window.electronAPI.deleteQuote(id);
-      } catch (e) {
-        console.warn('Fallback a local storage para eliminar:', e);
+    // Laravel
+    await apiRequest<void>(
+      `/api/quotes/${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE'
       }
-    }
+    );
   }
 
-  // --- MATERIALES / INSUMOS ---
+  // ==========================================
+  // MATERIALES / INSUMOS
+  // ==========================================
+
   async getMaterials(): Promise<Insumo[]> {
-    // 1. Intentar API Laravel
-    try {
-      const res = await fetch('/api/materials', {
-        headers: defaultHeaders()
-      });
-      if (res.ok) {
-        const materials: Insumo[] = await res.json();
-        if (materials && materials.length > 0) {
-          localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(materials));
-          return materials;
-        }
-      }
-    } catch {
-      // Fallback
+    // Electron
+    if (window.electronAPI?.isElectron) {
+      return await window.electronAPI.getMaterials();
     }
 
-    // 2. Intentar Electron API
-    if (window.electronAPI?.getMaterials) {
-      try {
-        return await window.electronAPI.getMaterials();
-      } catch (e) {
-        console.warn('Fallback a local storage para insumos:', e);
-      }
-    }
+    // Laravel
+    const materials = await apiRequest<Insumo[]>(
+      '/api/materials'
+    );
 
-    // 3. Fallback LocalStorage / Seeds
-    const data = localStorage.getItem(STORAGE_KEYS.MATERIALS);
-    if (!data) {
-      localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(SEED_INSUMOS));
-      return SEED_INSUMOS;
-    }
-    try {
-      return JSON.parse(data);
-    } catch {
-      return SEED_INSUMOS;
-    }
+    return materials || [];
   }
 
   async saveMaterial(material: Insumo): Promise<void> {
-    // Actualizar cache local
-    const materials = await this.getMaterials();
-    const index = materials.findIndex(m => m.id === material.id);
-    const updated = { ...material, fechaActualizacion: new Date().toISOString().split('T')[0] };
-    if (index >= 0) {
-      materials[index] = updated;
-    } else {
-      materials.unshift(updated);
+    // Electron
+    if (window.electronAPI?.isElectron) {
+      await window.electronAPI.saveMaterial(material);
+      return;
     }
-    localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(materials));
 
-    // 1. Guardar en API Laravel
-    try {
-      await fetch('/api/materials', {
+    // Laravel
+    await apiRequest<void>(
+      '/api/materials',
+      {
         method: 'POST',
-        headers: defaultHeaders(),
         body: JSON.stringify(material)
-      });
-    } catch (e) {
-      console.warn('No se pudo guardar insumo en el backend Laravel:', e);
-    }
-
-    // 2. Guardar en Electron
-    if (window.electronAPI?.saveMaterial) {
-      try {
-        await window.electronAPI.saveMaterial(material);
-      } catch (e) {
-        console.warn('Fallback a local storage para insumos:', e);
       }
-    }
+    );
   }
 
   async deleteMaterial(id: string): Promise<void> {
-    const materials = await this.getMaterials();
-    const filtered = materials.filter(m => m.id !== id);
-    localStorage.setItem(STORAGE_KEYS.MATERIALS, JSON.stringify(filtered));
-
-    // 1. Eliminar en API Laravel
-    try {
-      await fetch(`/api/materials/${id}`, {
-        method: 'DELETE',
-        headers: defaultHeaders()
-      });
-    } catch (e) {
-      console.warn('No se pudo eliminar insumo en el backend Laravel:', e);
+    // Electron
+    if (window.electronAPI?.isElectron) {
+      await window.electronAPI.deleteMaterial(id);
+      return;
     }
 
-    // 2. Eliminar en Electron
-    if (window.electronAPI?.deleteMaterial) {
-      try {
-        await window.electronAPI.deleteMaterial(id);
-      } catch (e) {
-        console.warn('Fallback a local storage para eliminar insumo:', e);
+    // Laravel
+    await apiRequest<void>(
+      `/api/materials/${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE'
       }
-    }
+    );
   }
 
-  // --- CONFIGURACIÓN DE EMPRESA ---
+  // ==========================================
+  // CONFIGURACIÓN DE EMPRESA
+  // ==========================================
+
   async getConfig(): Promise<ConfiguracionEmpresa> {
-    // 1. Intentar API Laravel
-    try {
-      const res = await fetch('/api/config', {
-        headers: defaultHeaders()
-      });
-      if (res.ok) {
-        const config: ConfiguracionEmpresa = await res.json();
-        if (config && config.nombreEmpresa) {
-          localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(config));
-          return config;
-        }
-      }
-    } catch {
-      // Fallback
+    // Electron
+    if (window.electronAPI?.isElectron) {
+      const config = await window.electronAPI.getConfig();
+
+      return config || DEFAULT_CONFIG;
     }
 
-    // 2. Intentar Electron API
-    if (window.electronAPI?.getConfig) {
-      try {
-        const conf = await window.electronAPI.getConfig();
-        if (conf && conf.nombreEmpresa) {
-          return conf;
-        }
-      } catch (e) {
-        console.warn('Fallback a local storage para configuración:', e);
-      }
-    }
+    // Laravel
+    const config = await apiRequest<ConfiguracionEmpresa>(
+      '/api/config'
+    );
 
-    // 3. Fallback LocalStorage / Default
-    const data = localStorage.getItem(STORAGE_KEYS.CONFIG);
-    if (!data) {
-      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(DEFAULT_CONFIG));
-      return DEFAULT_CONFIG;
-    }
-    try {
-      const parsed = JSON.parse(data);
-      return (parsed && parsed.nombreEmpresa) ? parsed : DEFAULT_CONFIG;
-    } catch {
-      return DEFAULT_CONFIG;
-    }
+    return config || DEFAULT_CONFIG;
   }
 
-  async saveConfig(config: ConfiguracionEmpresa): Promise<void> {
-    localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(config));
+  async saveConfig(
+    config: ConfiguracionEmpresa
+  ): Promise<void> {
+    // Electron
+    if (window.electronAPI?.isElectron) {
+      await window.electronAPI.saveConfig(config);
+      return;
+    }
 
-    // 1. Guardar en API Laravel
-    try {
-      await fetch('/api/config', {
+    // Laravel
+    await apiRequest<void>(
+      '/api/config',
+      {
         method: 'POST',
-        headers: defaultHeaders(),
         body: JSON.stringify(config)
-      });
-    } catch (e) {
-      console.warn('No se pudo guardar la configuración en backend Laravel:', e);
-    }
-
-    // 2. Guardar en Electron
-    if (window.electronAPI?.saveConfig) {
-      try {
-        await window.electronAPI.saveConfig(config);
-      } catch (e) {
-        console.warn('Fallback a local storage para configuración:', e);
       }
-    }
+    );
   }
 }
 

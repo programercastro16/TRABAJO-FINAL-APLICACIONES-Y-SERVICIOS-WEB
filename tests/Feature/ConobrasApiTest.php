@@ -3,34 +3,60 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class ConobrasApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * Authenticate a test user for protected API routes.
+     */
+    private function authenticateUser(): void
+    {
+        $user = User::factory()->create();
+
+        Sanctum::actingAs($user);
+    }
+
     public function test_home_blade_loads(): void
     {
         $response = $this->get('/');
+
         $response->assertStatus(200);
         $response->assertSee('conobras quote');
     }
 
     public function test_api_config(): void
     {
+        $this->authenticateUser();
+
         $response = $this->getJson('/api/config');
+
         $response->assertStatus(200);
-        $response->assertJsonStructure(['nombreEmpresa', 'arquitecto', 'monedaSimbolo']);
+        $response->assertJsonStructure([
+            'nombreEmpresa',
+            'arquitecto',
+            'monedaSimbolo'
+        ]);
     }
 
     public function test_api_materials(): void
     {
+        $this->authenticateUser();
+
         $response = $this->getJson('/api/materials');
+
         $response->assertStatus(200);
         $this->assertIsArray($response->json());
     }
 
     public function test_api_quote_lifecycle(): void
     {
+        $this->authenticateUser();
+
         // 1. Create Quote
         $quoteData = [
             'id' => 'test-cot-101',
@@ -73,8 +99,13 @@ class ConobrasApiTest extends TestCase
 
         // 2. Read Quote
         $resGet = $this->getJson('/api/quotes/test-cot-101');
+
         $resGet->assertStatus(200);
-        $this->assertEquals('Cliente de Prueba Laravel', $resGet->json('cliente'));
+
+        $this->assertEquals(
+            'Cliente de Prueba Laravel',
+            $resGet->json('cliente')
+        );
 
         // 3. Duplicate Quote
         $resDup = $this->postJson('/api/quotes/test-cot-101/duplicate');

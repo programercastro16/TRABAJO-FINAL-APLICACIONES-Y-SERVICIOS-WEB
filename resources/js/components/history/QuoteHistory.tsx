@@ -1,26 +1,21 @@
+
 import React, { useState, useMemo } from 'react';
-import { 
-  History, 
-  Search, 
-  Eye, 
-  Copy, 
-  Trash2, 
-  Calendar, 
-  User, 
-  MapPin, 
-  FileText, 
-  DollarSign,
-  ArrowRight,
-  ExternalLink,
+import {
+  History,
+  Search,
+  Eye,
+  Copy,
+  Trash2,
+  Calendar,
+  User,
+  MapPin,
   TrendingUp,
   CheckCircle2,
   FolderCheck,
-  Building2,
-  Sparkles
+  Building2
 } from 'lucide-react';
 import { Cotizacion, EstadoCotizacion } from '../../types';
 import { storageService } from '../../services/storageService';
-import { TiltCard } from '../common/TiltCard';
 import { AnimatedCounter } from '../common/AnimatedCounter';
 import { ShimmerBadge } from '../common/AnimatedText';
 
@@ -42,27 +37,53 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
 
   const calculateTotal = (quote: Cotizacion) => {
     const partidas = Array.isArray(quote?.partidas) ? quote.partidas : [];
+
     const costoDirecto = partidas.reduce((sumP, p) => {
       const items = Array.isArray(p?.items) ? p.items : [];
-      return sumP + items.reduce((sumI, i) => sumI + (Number(i?.cantidad || 0) * Number(i?.precioUnitario || 0)), 0);
+
+      return sumP + items.reduce(
+        (sumI, i) =>
+          sumI + (Number(i?.cantidad || 0) * Number(i?.precioUnitario || 0)),
+        0
+      );
     }, 0);
 
     const isSimplificado = quote?.modoCalculo === 'SIMPLIFICADO';
+
     if (isSimplificado) {
-      const aiuGlobalPct = Number(quote?.porcentajeAiuGlobal !== undefined ? quote.porcentajeAiuGlobal : 28);
+      const aiuGlobalPct = Number(
+        quote?.porcentajeAiuGlobal !== undefined
+          ? quote.porcentajeAiuGlobal
+          : 28
+      );
+
       const montoAiu = costoDirecto * (aiuGlobalPct / 100);
       const subtotalConAiu = costoDirecto + montoAiu;
-      const iva = quote?.aplicaIva ? montoAiu * (Number(quote?.porcentajeIva || 0) / 100) : 0;
+
+      const iva = quote?.aplicaIva
+        ? montoAiu * (Number(quote?.porcentajeIva || 0) / 100)
+        : 0;
+
       return subtotalConAiu + iva;
     } else {
-      const pAdm = Number(quote?.porcentajeAdministracion ?? quote?.porcentajeGastosGenerales ?? 8);
+      const pAdm = Number(
+        quote?.porcentajeAdministracion ??
+        quote?.porcentajeGastosGenerales ??
+        8
+      );
+
       const pImp = Number(quote?.porcentajeImprevistos ?? 5);
       const pUtil = Number(quote?.porcentajeHonorarios ?? 15);
+
       const montoAdm = costoDirecto * (pAdm / 100);
       const montoImp = costoDirecto * (pImp / 100);
       const montoUtil = costoDirecto * (pUtil / 100);
+
       // En modo desglosado, el IVA se cobra únicamente sobre la Utilidad (U)
-      const iva = quote?.aplicaIva ? montoUtil * (Number(quote?.porcentajeIva || 0) / 100) : 0;
+      const iva = quote?.aplicaIva
+        ? montoUtil * (Number(quote?.porcentajeIva || 0) / 100)
+        : 0;
+
       return costoDirecto + montoAdm + montoImp + montoUtil + iva;
     }
   };
@@ -75,20 +96,31 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
 
     (quotes || []).forEach(q => {
       totalMonto += calculateTotal(q);
+
       if (q.estado === 'APROBADA') aprobadas++;
       if (q.estado === 'PRESENTADA') presentadas++;
     });
 
-    return { totalMonto, aprobadas, presentadas, totalQuotes: (quotes || []).length };
+    return {
+      totalMonto,
+      aprobadas,
+      presentadas,
+      totalQuotes: (quotes || []).length
+    };
   }, [quotes]);
 
   const filteredQuotes = (quotes || []).filter(q => {
     const term = searchTerm.toLowerCase();
-    const matchesSearch = (q.codigo || '').toLowerCase().includes(term) ||
-                          (q.proyecto || '').toLowerCase().includes(term) ||
-                          (q.cliente || '').toLowerCase().includes(term) ||
-                          (q.ubicacion || '').toLowerCase().includes(term);
-    const matchesStatus = filterStatus === 'TODOS' || q.estado === filterStatus;
+
+    const matchesSearch =
+      (q.codigo || '').toLowerCase().includes(term) ||
+      (q.proyecto || '').toLowerCase().includes(term) ||
+      (q.cliente || '').toLowerCase().includes(term) ||
+      (q.ubicacion || '').toLowerCase().includes(term);
+
+    const matchesStatus =
+      filterStatus === 'TODOS' || q.estado === filterStatus;
+
     return matchesSearch && matchesStatus;
   });
 
@@ -103,44 +135,85 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
       creadoEn: new Date().toISOString(),
       actualizadoEn: new Date().toISOString()
     };
+
     await storageService.saveQuote(duplicated);
     onRefresh();
   };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
-    if (confirm('¿Estás seguro de eliminar permanentemente esta cotización de la base de datos local?')) {
-      await storageService.deleteQuote(id);
-      onRefresh();
+
+    if (
+      confirm(
+        '¿Estás seguro de eliminar permanentemente esta cotización de la base de datos?'
+      )
+    ) {
+      try {
+        await storageService.deleteQuote(id);
+        onRefresh();
+      } catch (error) {
+        console.error('Error al eliminar la cotización:', error);
+        alert(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo eliminar la cotización.'
+        );
+      }
     }
   };
 
   const getStatusBadge = (estado: EstadoCotizacion) => {
     switch (estado) {
       case 'BORRADOR':
-        return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700 border border-slate-300 font-semibold">Borrador</span>;
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700 border border-slate-300 font-semibold">
+            Borrador
+          </span>
+        );
+
       case 'PRESENTADA':
-        return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-amber-50 text-amber-800 border border-amber-300 font-semibold">Presentada</span>;
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-amber-50 text-amber-800 border border-amber-300 font-semibold">
+            Presentada
+          </span>
+        );
+
       case 'APROBADA':
-        return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold">Aprobada</span>;
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold">
+            Aprobada
+          </span>
+        );
+
       case 'RECHAZADA':
-        return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-red-50 text-red-700 border border-red-300 font-semibold">Rechazada</span>;
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-red-50 text-red-700 border border-red-300 font-semibold">
+            Rechazada
+          </span>
+        );
     }
   };
 
   return (
     <div className="space-y-6">
+
       {/* HEADER DE HISTORIAL */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white border border-[#C5CAD2] shadow-sm">
         <div>
           <div className="flex items-center gap-2">
             <History className="text-[#9E7A18]" size={22} />
+
             <h2 className="text-lg font-bold text-[#111622] tracking-wide uppercase">
               Historial de Presupuestos & Obras
             </h2>
           </div>
+
           <p className="text-xs text-[#586274] mt-0.5">
-            Registro local de propuestas económicas, presupuestos emitidos y análisis de costos <span className="font-brand font-bold lowercase text-xs">conobras</span>
+            Registro local de propuestas económicas, presupuestos emitidos y análisis de costos{' '}
+            <span className="font-brand font-bold lowercase text-xs">
+              conobras
+            </span>
           </p>
         </div>
 
@@ -149,71 +222,91 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
         </ShimmerBadge>
       </div>
 
-      {/* TARJETAS DE MÉTRICAS KPI ACUMULADAS CON 3D TILT */}
+      {/* TARJETAS DE MÉTRICAS KPI */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
         {/* Total Cartera */}
-        <TiltCard maxTilt={5}>
+        <div>
           <div className="p-5 rounded-2xl bg-white border border-[#C5CAD2] hover:border-[#D4AF37]/50 transition-colors shadow-sm">
             <div className="flex items-center justify-between text-[#586274] mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Cartera Presupuestada</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                Cartera Presupuestada
+              </span>
+
               <div className="p-1.5 rounded-lg bg-[#D4AF37]/20 text-[#9E7A18]">
                 <TrendingUp size={16} />
               </div>
             </div>
+
             <div className="text-2xl font-bold text-[#111622]">
-              <AnimatedCounter 
-                value={stats.totalMonto} 
-                prefix="$ " 
+              <AnimatedCounter
+                value={stats.totalMonto}
+                prefix="$ "
                 className="bg-gradient-to-r from-[#111622] to-[#9E7A18] bg-clip-text text-transparent"
               />
             </div>
+
             <div className="text-[10px] font-mono text-[#8E99A8] mt-1">
               Suma de todas las cotizaciones emitidas
             </div>
           </div>
-        </TiltCard>
+        </div>
 
         {/* Obras Aprobadas */}
-        <TiltCard maxTilt={5}>
+        <div>
           <div className="p-5 rounded-2xl bg-white border border-[#C5CAD2] hover:border-[#16A34A]/50 transition-colors shadow-sm">
             <div className="flex items-center justify-between text-[#586274] mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Obras Aprobadas</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                Obras Aprobadas
+              </span>
+
               <div className="p-1.5 rounded-lg bg-[#16A34A]/15 text-[#15803D]">
                 <CheckCircle2 size={16} />
               </div>
             </div>
+
             <div className="text-2xl font-bold text-[#15803D]">
               <AnimatedCounter value={stats.aprobadas} decimals={0} />
             </div>
+
             <div className="text-[10px] font-mono text-[#8E99A8] mt-1">
               Presupuestos listos para ejecución de obra
             </div>
           </div>
-        </TiltCard>
+        </div>
 
-        {/* Total Cotizaciones Activas */}
-        <TiltCard maxTilt={5}>
+        {/* Propuestas Presentadas */}
+        <div>
           <div className="p-5 rounded-2xl bg-white border border-[#C5CAD2] hover:border-[#0284C7]/50 transition-colors shadow-sm">
             <div className="flex items-center justify-between text-[#586274] mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Propuestas Presentadas</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                Propuestas Presentadas
+              </span>
+
               <div className="p-1.5 rounded-lg bg-[#0284C7]/15 text-[#0369A1]">
                 <FolderCheck size={16} />
               </div>
             </div>
+
             <div className="text-2xl font-bold text-[#0369A1]">
               <AnimatedCounter value={stats.presentadas} decimals={0} />
             </div>
+
             <div className="text-[10px] font-mono text-[#8E99A8] mt-1">
               En revisión o negociación con cliente
             </div>
           </div>
-        </TiltCard>
+        </div>
       </div>
 
       {/* FILTROS Y BÚSQUEDA */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3.5 top-3 text-[#8E99A8]" />
+          <Search
+            size={16}
+            className="absolute left-3.5 top-3 text-[#8E99A8]"
+          />
+
           <input
             type="text"
             placeholder="Buscar por folio, cliente, nombre de obra o ubicación..."
@@ -240,7 +333,7 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
         </div>
       </div>
 
-      {/* GRID DE COTIZACIONES CON ENTRADA ANIMADA Y 3D TILT */}
+      {/* GRID DE COTIZACIONES */}
       {filteredQuotes.length === 0 ? (
         <div className="p-12 text-center rounded-2xl bg-white border border-[#C5CAD2] text-[#586274] shadow-sm">
           No se encontraron cotizaciones con el criterio de búsqueda.
@@ -250,14 +343,18 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
           {filteredQuotes.map((quote, idx) => {
             const total = calculateTotal(quote);
             const totalPartidas = quote.partidas.length;
-            const totalItems = quote.partidas.reduce((acc, p) => acc + p.items.length, 0);
+            const totalItems = quote.partidas.reduce(
+              (acc, p) => acc + p.items.length,
+              0
+            );
 
             return (
-              <div 
-                key={quote.id} 
+              <div
+                key={quote.id}
                 className={`animate-fade-in-up stagger-${Math.min(idx + 1, 5)}`}
               >
-                <TiltCard maxTilt={5} className="h-full">
+                {/* TiltCard se mantiene retirado porque bloqueaba los clics */}
+                <div className="h-full">
                   <div
                     onClick={() => onSelectQuote(quote)}
                     className="h-full group p-5 rounded-2xl bg-white border border-[#C5CAD2] hover:border-[#D4AF37]/60 transition-all cursor-pointer flex flex-col justify-between shadow-sm hover:shadow-md"
@@ -268,6 +365,7 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
                         <span className="font-mono text-xs font-bold text-[#9E7A18] bg-[#F5F6F9] px-2.5 py-0.5 rounded border border-[#D4AF37]/30">
                           {quote.codigo}
                         </span>
+
                         {getStatusBadge(quote.estado)}
                       </div>
 
@@ -280,17 +378,25 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
                       <div className="space-y-1.5 text-xs text-[#586274] mb-4">
                         <div className="flex items-center gap-2 truncate">
                           <User size={13} className="text-[#8E99A8] shrink-0" />
-                          <span className="truncate">{quote.cliente || 'Sin cliente asignado'}</span>
+                          <span className="truncate">
+                            {quote.cliente || 'Sin cliente asignado'}
+                          </span>
                         </div>
+
                         <div className="flex items-center gap-2 truncate">
                           <MapPin size={13} className="text-[#8E99A8] shrink-0" />
-                          <span className="truncate">{quote.ubicacion || 'Ubicación no especificada'}</span>
+                          <span className="truncate">
+                            {quote.ubicacion || 'Ubicación no especificada'}
+                          </span>
                         </div>
+
                         <div className="flex items-center gap-2">
                           <Calendar size={13} className="text-[#8E99A8] shrink-0" />
                           <span>{quote.fecha}</span>
                           <span>•</span>
-                          <span>{totalPartidas} partidas ({totalItems} conceptos)</span>
+                          <span>
+                            {totalPartidas} partidas ({totalItems} conceptos)
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -298,16 +404,23 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
                     {/* Bottom: Total Financiero y Acciones */}
                     <div className="pt-3 border-t border-[#E2E6EB] flex items-center justify-between">
                       <div>
-                        <span className="text-[10px] text-[#8E99A8] uppercase tracking-wider block font-semibold">Presupuesto</span>
+                        <span className="text-[10px] text-[#8E99A8] uppercase tracking-wider block font-semibold">
+                          Presupuesto
+                        </span>
+
                         <div className="text-base font-mono font-bold text-[#111622] group-hover:text-[#9E7A18] transition-colors">
-                          <AnimatedCounter 
-                            value={total} 
+                          <AnimatedCounter
+                            value={total}
                             prefix={`${quote.moneda} `}
                           />
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 relative z-30" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex items-center gap-1.5 relative z-30"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Editar */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -320,6 +433,8 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
                         >
                           <span>Editar</span>
                         </button>
+
+                        {/* Ver PDF */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -332,6 +447,8 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
                         >
                           <Eye size={15} />
                         </button>
+
+                        {/* Duplicar */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -344,6 +461,8 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
                         >
                           <Copy size={15} />
                         </button>
+
+                        {/* Eliminar */}
                         <button
                           type="button"
                           onClick={(e) => handleDelete(quote.id, e)}
@@ -355,7 +474,7 @@ export const QuoteHistory: React.FC<QuoteHistoryProps> = ({
                       </div>
                     </div>
                   </div>
-                </TiltCard>
+                </div>
               </div>
             );
           })}

@@ -228,12 +228,21 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
     };
   }, [quote]);
 
-  // Guardar en la base de datos local SQLite
+  // Guardar cotización mediante el servicio de almacenamiento
   const handleSave = async () => {
-    await storageService.saveQuote(quote);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2500);
-    onQuoteSaved();
+    try {
+      await storageService.saveQuote(quote);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+      onQuoteSaved();
+    } catch (error) {
+      console.error('Error al guardar la cotización:', error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar la cotización.'
+      );
+    }
   };
 
   // Manipulación de Partidas
@@ -398,7 +407,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
           {saveSuccess && (
             <div className="flex items-center gap-1.5 text-xs text-[#15803D] bg-[#DCFCE7] px-3 py-1.5 rounded-lg border border-[#16A34A]/30 animate-in fade-in">
               <Check size={14} />
-              <span>Guardado en SQLite</span>
+              <span>Guardado Correctamente</span>
             </div>
           )}
 
@@ -408,7 +417,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             onClick={handleSave}
             icon={<Save size={15} className="text-[#9E7A18]" />}
           >
-            Guardar Local
+            Guardar Cotización
           </InteractiveButton>
 
           <InteractiveButton

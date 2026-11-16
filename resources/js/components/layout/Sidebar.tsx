@@ -247,7 +247,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16A34A] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#16A34A]"></span>
               </span>
-              <span className="text-[10px] font-mono font-bold text-[#111622]">SQLite Local Engine</span>
+              <span className="text-[10px] font-mono font-bold text-[#111622]">MySQL Database</span>
             </div>
             <span className="text-[9px] text-[#9E7A18] font-mono font-bold px-1.5 py-0.5 rounded bg-[#D4AF37]/15 border border-[#D4AF37]/35">
               PRO
@@ -255,7 +255,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           <div className="text-[9px] text-[#586274] flex items-center justify-between font-mono pt-1 border-t border-[#E2E8F0]">
-            <span>MODO OFFLINE</span>
+            <span>LARAVEL 12 API</span>
             <span className="text-[#0284C7] font-semibold">CAD / 3D ACTIVO</span>
           </div>
         </div>
