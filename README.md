@@ -66,6 +66,6 @@ php artisan migrate:fresh --seed
 ## 💾 Dónde se Guardan tus Datos (MySQL)
 Toda la información se gestiona a través de Laravel Eloquent en el archivo local:
 ```text
-database/database.sqlite
+database/database.mysql
 ```
 Tus cotizaciones, catálogo de precios y configuración permanecen 100% privados y locales.
